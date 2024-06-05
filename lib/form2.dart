@@ -1,8 +1,14 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+
+import 'package:auth_test/models/user_models.dart';
+
+import 'package:auth_test/widgets/infos_sum_form.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:auth_test/acceuil.dart';
-import 'package:auth_test/otp.dart';
+
+
 import 'package:auth_test/services/auth_service.dart';
 
 class Formulaire2 extends StatefulWidget {
@@ -13,12 +19,23 @@ class Formulaire2 extends StatefulWidget {
 }
 
 class _Formulaire2State extends State<Formulaire2> {
+  Future<void> navigate() async {
+    FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+    final user = await _firebaseAuth.currentUser;
+    if (user != null) {
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (_) => InfoSummuryForm()));
+    }
+  }
+
+  bool circul = false;
   @override
   void initState() {
-    ;
+    navigate();
     // TODO: implement initState
     super.initState();
   }
+
 
   final TextEditingController _phoneController = TextEditingController();
 
@@ -213,7 +230,6 @@ class _Formulaire2State extends State<Formulaire2> {
                           return null;
                         },
                       ),
-                   
                       const SizedBox(height: 10),
                       DropdownButtonFormField<String>(
                         decoration: InputDecoration(
@@ -278,9 +294,62 @@ class _Formulaire2State extends State<Formulaire2> {
                         ),
                         items: const [
                           DropdownMenuItem(
-                              value: "Au chômage", child: Text("Au chômage")),
+                              value: "Ouvrier", child: Text("Ouvrier")),
                           DropdownMenuItem(
-                              value: "A un emploi", child: Text("A un emploi")),
+                              value: "Employé de bureau",
+                              child: Text("Employé de bureau")),
+                          DropdownMenuItem(
+                              value: "Technicien", child: Text("Technicien")),
+                          DropdownMenuItem(
+                              value: "Cadre", child: Text("Cadre")),
+                          DropdownMenuItem(
+                              value: "Ingénieur", child: Text("Ingénieur")),
+                          DropdownMenuItem(
+                              value: "Médecin", child: Text("Médecin")),
+                          DropdownMenuItem(
+                              value: "Avocat", child: Text("Avocat")),
+                          DropdownMenuItem(
+                              value: "Comptable", child: Text("Comptable")),
+                          DropdownMenuItem(
+                              value: "Professeur", child: Text("Professeur")),
+                          DropdownMenuItem(
+                              value: "Artisan", child: Text("Artisan")),
+                          DropdownMenuItem(
+                              value: "Commerçant", child: Text("Commerçant")),
+                          DropdownMenuItem(
+                              value: "Agriculteur", child: Text("Agriculteur")),
+                          DropdownMenuItem(
+                              value: "Chef d'entreprise",
+                              child: Text("Chef d'entreprise")),
+                          DropdownMenuItem(
+                              value: "Fonctionnaire",
+                              child: Text("Fonctionnaire")),
+                          DropdownMenuItem(
+                              value: "Étudiant", child: Text("Étudiant")),
+                          DropdownMenuItem(
+                              value: "Retraité", child: Text("Retraité")),
+                          DropdownMenuItem(
+                              value: "Chômeur", child: Text("Chômeur")),
+                          DropdownMenuItem(
+                              value: "Indépendant", child: Text("Indépendant")),
+                          DropdownMenuItem(
+                              value: "Freelance", child: Text("Freelance")),
+                          DropdownMenuItem(
+                              value: "Consultant", child: Text("Consultant")),
+                          DropdownMenuItem(
+                              value: "Infirmier", child: Text("Infirmier")),
+                          DropdownMenuItem(
+                              value: "Assistante sociale",
+                              child: Text("Assistante sociale")),
+                          DropdownMenuItem(
+                              value: "Informaticien",
+                              child: Text("Informaticien")),
+                          DropdownMenuItem(
+                              value: "Architecte", child: Text("Architecte")),
+                          DropdownMenuItem(
+                              value: "Journaliste", child: Text("Journaliste")),
+                          DropdownMenuItem(
+                              value: "Artiste", child: Text("Artiste")),
                         ],
                         onChanged: (value) {
                           print(value);
@@ -307,22 +376,14 @@ class _Formulaire2State extends State<Formulaire2> {
                         ),
                         child: MaterialButton(
                           onPressed: () {
+                            setState(() {
+                              circul = true;
+                            });
+
                             if (_formKey.currentState!.validate()) {
                               print(
                                   "Le formulaire est valide. Envoi de l'OTP...");
 
-                              Utilisateur newuser = Utilisateur(
-                                  phoneUser: _phoneController.text,
-                                  NomUser: _nomComplet.text,
-                                  age: _age.text,
-                                  email: _email.text,
-                                  sexe: _sexe.text,
-                                  niveauSColaire: _niveauScolaire.text,
-                                  SituationMatrimoniale:
-                                      _situationMatrimoniale.text,
-                                  emploi: _emploi.text);
-
-                              print(newuser.toString());
                               AuthService.sentOtp(
                                   phone: _phoneController.text,
                                   errorStep: () {
@@ -387,13 +448,50 @@ class _Formulaire2State extends State<Formulaire2> {
                                                           otp: _otpController
                                                               .text)
                                                       .then((value) {
+                                                    print("otp zone");
+                                                    ;
+                                                    AuthService.registerUser(
+                                                        phoneUser:
+                                                            _phoneController
+                                                                .text,
+                                                        NomUser:
+                                                            _nomComplet.text,
+                                                        age: _age.text,
+                                                        email: _email.text,
+                                                        sexe: _sexe.text,
+                                                        niveauSColaire:
+                                                            _niveauScolaire
+                                                                .text,
+                                                        SituationMatrimoniale:
+                                                            _situationMatrimoniale
+                                                                .text,
+                                                        emploi: _emploi.text);
+
+                                                    /*            Users users = Users(
+                                                        id: 15,
+                                                        phoneUser:
+                                                            _phoneController
+                                                                .text,
+                                                        NomUser:
+                                                            _nomComplet.text,
+                                                        age: _age.text,
+                                                        email: _email.text,
+                                                        sexe: _sexe.text,
+                                                        niveauSColaire:
+                                                            _niveauScolaire
+                                                                .text,
+                                                        SituationMatrimoniale:
+                                                            _situationMatrimoniale
+                                                                .text,
+                                                        emploi: _emploi.text);
+                                                    _databaseService
+                                                        .addUsers(users); */
                                                     if (value == "Success") {
                                                       Navigator.push(
                                                           context,
                                                           MaterialPageRoute(
-                                                              builder:
-                                                                  (context) =>
-                                                                      ReadSms()));
+                                                              builder: (context) =>
+                                                                  InfoSummuryForm()));
                                                     } else {
                                                       ScaffoldMessenger.of(
                                                               context)
@@ -419,14 +517,14 @@ class _Formulaire2State extends State<Formulaire2> {
                                       ),
                                     );
                                   });
-
-                             
                             }
                           },
-                          child: const Text(
-                            "S'enregistrer",
-                            style: TextStyle(color: Colors.black),
-                          ),
+                          child: circul == true
+                              ? CircularProgressIndicator()
+                              : const Text(
+                                  "S'enregistrer",
+                                  style: TextStyle(color: Colors.black),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -472,38 +570,5 @@ class _Formulaire2State extends State<Formulaire2> {
       ),
       keyboardType: keyboardType,
     );
-  }
-}
-
-class Utilisateur {
-  final String phoneUser;
-
-  final String NomUser;
-
-  final String age;
-
-  final String email;
-
-  final String sexe;
-
-  final String niveauSColaire;
-
-  final String SituationMatrimoniale;
-
-  final String emploi;
-  Utilisateur({
-    required this.phoneUser,
-    required this.NomUser,
-    required this.age,
-    required this.email,
-    required this.sexe,
-    required this.niveauSColaire,
-    required this.SituationMatrimoniale,
-    required this.emploi,
-  });
-
-  @override
-  String toString() {
-    return 'Utilisateur(phoneUser: $phoneUser, NomUser: $NomUser, age: $age, email: $email, sexe: $sexe, niveauSColaire: $niveauSColaire, SituationMatrimoniale: $SituationMatrimoniale, emploi: $emploi)';
   }
 }

@@ -1,15 +1,19 @@
-import 'package:auth_test/acceuil.dart';
+
 import 'package:auth_test/firebase_options.dart';
 import 'package:auth_test/form2.dart';
-import 'package:auth_test/formulaire.dart';
-import 'package:auth_test/otp.dart';
+
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  options:DefaultFirebaseOptions.currentPlatform;
+  options:
+  DefaultFirebaseOptions.currentPlatform;
+  FirebaseFirestore.instance.settings =
+      const Settings(persistenceEnabled: true);
   runApp(MyApp());
 }
 
