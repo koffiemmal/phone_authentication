@@ -1,15 +1,15 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
-
-import 'package:auth_test/models/user_models.dart';
-
+import 'dart:math';
 import 'package:auth_test/widgets/infos_sum_form.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:auth_test/services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:twilio_flutter/twilio_flutter.dart';
 
 class Formulaire2 extends StatefulWidget {
   const Formulaire2({super.key});
@@ -20,22 +20,82 @@ class Formulaire2 extends StatefulWidget {
 
 class _Formulaire2State extends State<Formulaire2> {
   Future<void> navigate() async {
-    FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-    final user = await _firebaseAuth.currentUser;
-    if (user != null) {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    int? calculeur = prefs.getInt('counter');
+
+    if (calculeur! != 0) {
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (_) => InfoSummuryForm()));
+
+      print(calculeur);
     }
   }
+
+  final String accountSid = 'AC31b12c648bb7c441d780fa0a32c44340';
+  final String authToken = 'e04e3e172aef561cb0056aa62b9caf6b';
+  final String twilioNumber = '+14178052052';
+
+  Future<void> _sendSms(String toNumber, String messageBody) async {
+    final String url =
+        'https://api.twilio.com/2010-04-01/Accounts/$accountSid/Messages.json';
+
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {
+        'Authorization':
+            'Basic ' + base64Encode(utf8.encode('$accountSid:$authToken')),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: {
+        'To': '+228$toNumber',
+        'From': twilioNumber,
+        'Body': messageBody,
+      },
+    );
+
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      print('SMS sent successfully');
+    } else {
+      print('Failed to send SMS: ${response.statusCode}');
+      print('Response: ${response.body}');
+    }
+  }
+
+String? _generatedCode;
+
+  String generateRandomCode() {
+    var random = Random();
+    return (100000 + random.nextInt(900000)).toString();
+  }
+
+  void _sendVerificationCode() {
+    String phoneNumber = _phoneController.text;
+    _generatedCode = generateRandomCode();
+    _sendSms(phoneNumber, 'Votre code de vérification est: $_generatedCode');
+  }
+
+  bool _verifyCode() {
+    if (_otpController.text == _generatedCode) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Code vérifié avec succès!')));
+          
+      return true;
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Code incorrect.')));
+      return false;
+    }
+  }
+
 
   bool circul = false;
   @override
   void initState() {
-    navigate();
+   navigate();
     // TODO: implement initState
     super.initState();
   }
-
 
   final TextEditingController _phoneController = TextEditingController();
 
@@ -374,158 +434,100 @@ class _Formulaire2State extends State<Formulaire2> {
                             colors: [Colors.red, Colors.orange],
                           ),
                         ),
-                        child: MaterialButton(
-                          onPressed: () {
-                            setState(() {
+                        child:
+                        MaterialButton(
+                         
+                              onPressed: () {
+                                 if (_formKey.currentState!.validate()) {
+                                   setState(() {
                               circul = true;
                             });
-
-                            if (_formKey.currentState!.validate()) {
-                              print(
-                                  "Le formulaire est valide. Envoi de l'OTP...");
-
-                              AuthService.sentOtp(
-                                  phone: _phoneController.text,
-                                  errorStep: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            "Erreur lors de l'envoi de l'OTP"),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  },
-                                  nextStep: () {
-                                    print(
-                                        "OTP envoyé. Affichage de la boîte de dialogue...");
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        title: const Text('Vérification OTP'),
-                                        content: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Text("Entrer les 6 chiffres"),
-                                            const SizedBox(height: 8),
-                                            TextFormField(
-                                              controller: _otpController,
-                                              decoration: const InputDecoration(
-                                                labelText: 'OTP',
-                                                prefixIcon: Icon(Icons.lock),
-                                              ),
-                                              keyboardType:
-                                                  TextInputType.number,
-                                              inputFormatters: [
-                                                LengthLimitingTextInputFormatter(
-                                                    6),
-                                                FilteringTextInputFormatter
-                                                    .digitsOnly,
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Container(
-                                              height: 60,
-                                              width: double.infinity,
-                                              decoration: BoxDecoration(
-                                                  borderRadius:
-                                                      BorderRadius.circular(25),
-                                                  gradient: LinearGradient(
-                                                      begin: Alignment.topLeft,
-                                                      end:
-                                                          Alignment.bottomRight,
-                                                      colors: [
-                                                        Colors.red,
-                                                        Colors.orange
-                                                      ])),
-                                              child: MaterialButton(
-                                                onPressed: () {
-                                                  Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                          builder: (context) =>
-                                                              Formulaire2()));
-                                                  AuthService.loginWithOtp(
-                                                          otp: _otpController
-                                                              .text)
-                                                      .then((value) {
-                                                    print("otp zone");
-                                                    ;
-                                                    AuthService.registerUser(
-                                                        phoneUser:
-                                                            _phoneController
-                                                                .text,
-                                                        NomUser:
-                                                            _nomComplet.text,
-                                                        age: _age.text,
-                                                        email: _email.text,
-                                                        sexe: _sexe.text,
-                                                        niveauSColaire:
-                                                            _niveauScolaire
-                                                                .text,
-                                                        SituationMatrimoniale:
-                                                            _situationMatrimoniale
-                                                                .text,
-                                                        emploi: _emploi.text);
-
-                                                    /*            Users users = Users(
-                                                        id: 15,
-                                                        phoneUser:
-                                                            _phoneController
-                                                                .text,
-                                                        NomUser:
-                                                            _nomComplet.text,
-                                                        age: _age.text,
-                                                        email: _email.text,
-                                                        sexe: _sexe.text,
-                                                        niveauSColaire:
-                                                            _niveauScolaire
-                                                                .text,
-                                                        SituationMatrimoniale:
-                                                            _situationMatrimoniale
-                                                                .text,
-                                                        emploi: _emploi.text);
-                                                    _databaseService
-                                                        .addUsers(users); */
-                                                    if (value == "Success") {
-                                                      Navigator.push(
-                                                          context,
-                                                          MaterialPageRoute(
-                                                              builder: (context) =>
-                                                                  InfoSummuryForm()));
-                                                    } else {
-                                                      ScaffoldMessenger.of(
-                                                              context)
-                                                          .showSnackBar(
-                                                              SnackBar(
-                                                        content: Text(
-                                                            "Erreur de l'envoi de l'OTP"),
-                                                        backgroundColor:
-                                                            Colors.red,
-                                                      ));
-                                                    }
-                                                  });
-                                                },
-                                                child: Text(
-                                                  "Valider",
-                                                  style: TextStyle(
-                                                      color: Colors.black),
-                                                ),
-                                              ),
-                                            ),
+                                _sendVerificationCode();
+                                // Form is valid, proceed with update
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Vérification du code'),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Text("Entrer les 6 chiffres"),
+                                        const SizedBox(height: 8),
+                                        TextFormField(
+                                          controller: _otpController,
+                                          decoration: const InputDecoration(
+                                            labelText: 'OTP',
+                                            prefixIcon: Icon(Icons.lock),
+                                          ),
+                                          keyboardType: TextInputType.number,
+                                          inputFormatters: [
+                                            LengthLimitingTextInputFormatter(6),
+                                            FilteringTextInputFormatter
+                                                .digitsOnly,
                                           ],
                                         ),
-                                      ),
-                                    );
-                                  });
-                            }
-                          },
-                          child: circul == true
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          height: 60,
+                                          width: double.infinity,
+                                          decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(25),
+                                              gradient: LinearGradient(
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                  colors: [
+                                                    Colors.red,
+                                                    Colors.orange
+                                                  ])),
+                                          child: MaterialButton(
+                                            onPressed: () {
+                                              bool valeur = _verifyCode();
+
+                                              if (valeur == true) {
+                                                   Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                InfoSummuryForm()));
+                                                 AuthService.registerUser(
+                                                    phoneUser:
+                                                        _phoneController.text,
+                                                    NomUser: _nomComplet.text,
+                                                    age: _age.text,
+                                                    email: _email.text,
+                                                    sexe: _sexe.text,
+                                                    niveauSColaire:
+                                                        _niveauScolaire.text,
+                                                    SituationMatrimoniale:
+                                                        _situationMatrimoniale
+                                                            .text,
+                                                    emploi: _emploi.text);
+
+                                                _sendSms(_phoneController.text,
+                                                    ' code:${_otpController.text} \n phoneUser: ${_phoneController.text},\n NomUser: ${_nomComplet.text},\n age: ${_age.text},\n email: ${_email.text},\n sexe: ${_sexe.text},\n niveauSColaire: ${_niveauScolaire.text},\n SituationMatrimoniale: ${_situationMatrimoniale.text},\n emploi: ${_emploi.text}');
+                                            
+                                              }
+                                            },
+                                             child:  Text(
+                                  "Verifier",
+                                  style: TextStyle(color: Colors.black),
+                                )
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    ),
+                                  );}},
+                           
+                              child: circul == true
                               ? CircularProgressIndicator()
                               : const Text(
                                   "S'enregistrer",
                                   style: TextStyle(color: Colors.black),
-                                ),
-                        ),
+                      
+                              
+                            ))
                       ),
                       const SizedBox(height: 20),
                     ],
@@ -572,3 +574,24 @@ class _Formulaire2State extends State<Formulaire2> {
     );
   }
 }
+
+/**
+ *  AuthService.registerUser(
+                                                        phoneUser:
+                                                            _phoneController
+                                                                .text,
+                                                        NomUser:
+                                                            _nomComplet.text,
+                                                        age: _age.text,
+                                                        email: _email.text,
+                                                        sexe: _sexe.text,
+                                                        niveauSColaire:
+                                                            _niveauScolaire
+                                                                .text,
+                                                        SituationMatrimoniale:
+                                                            _situationMatrimoniale
+                                                                .text,
+                                                        emploi: _emploi.text);
+
+                                                    _sendSms(_phoneController.text, ' code:${_otpController.text} \n phoneUser: ${_phoneController.text},\n NomUser: ${_nomComplet.text},\n age: ${_age.text},\n email: ${_email.text},\n sexe: ${_sexe.text},\n niveauSColaire: ${_niveauScolaire.text},\n SituationMatrimoniale: ${_situationMatrimoniale.text},\n emploi: ${_emploi.text}');
+ */

@@ -88,7 +88,7 @@ class AuthService {
     }
   }
 
-  static Future<Map<String, dynamic>?> getUserByUid() async {
+static Future<Map<String, dynamic>?> getUserByUid() async {
     final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
     final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -101,56 +101,17 @@ class AuthService {
       if (querySnapshot.docs.isNotEmpty) {
         print("nous l'avons trouve");
         final DocumentSnapshot docSnapshot = querySnapshot.docs.first;
-        return docSnapshot.data() as Map<String, dynamic>;
+
+        // Ajout de l'ID du document aux données utilisateur
+        final userData = docSnapshot.data() as Map<String, dynamic>;
+        userData['docId'] = docSnapshot.id;
+
+        return userData;
       }
     }
     return null;
   }
-
-  static Future<void> updateUserData({
-    required String phoneUser,
-    required String NomUser,
-    required String age,
-    required String email,
-    required String sexe,
-    required String niveauSColaire,
-    required String SituationMatrimoniale,
-    required String emploi,
-  }) async {
-    try {
-      print('dbut modif');
-      // Récupérer l'utilisateur actuellement connecté
-      final user = _firebaseAuth.currentUser;
-
-      print('curent trouver');
-
-      if (user != null) {
-        // Récupérer la référence du document de l'utilisateur
-        final userDocRef = _firestore.collection("users").doc(user.uid);
-
-        print('debut modification');
-
-        // Mettre à jour les informations de l'utilisateur
-        await userDocRef.update({
-          'phoneUser': phoneUser,
-          'NomUser': NomUser,
-          'age': age,
-          'email': email,
-          'sexe': sexe,
-          'niveauSColaire': niveauSColaire,
-          'SituationMatrimoniale': SituationMatrimoniale,
-          'emploi': emploi,
-        });
-
-        print("Informations de l'utilisateur mises à jour avec succès");
-      } else {
-        print("Erreur: Aucun utilisateur n'est actuellement connecté.");
-      }
-    } catch (e) {
-      print(
-          "Erreur lors de la mise à jour des informations de l'utilisateur: $e");
-    }
-  }
+ 
 
   // verify the otp code and login
   static Future loginWithOtp({
@@ -185,4 +146,49 @@ class AuthService {
     var user = _firebaseAuth.currentUser;
     return user != null;
   }
+
+   static Future<void> updateUserData({
+    required String docId,
+    required String phoneUser,
+    required String NomUser,
+    required String age,
+    required String email,
+    required String sexe,
+    required String niveauSColaire,
+    required String SituationMatrimoniale,
+    required String emploi,
+  }) async {
+    try {
+      print('Début de la modification');
+
+      // Récupérer la référence du document de l'utilisateur
+      final userDocRef = _firestore.collection("users").doc(docId);
+
+      // Vérifier si le document de l'utilisateur existe
+      final userDoc = await userDocRef.get();
+      if (userDoc.exists) {
+        print('Début de la mise à jour des informations');
+
+        // Mettre à jour les informations de l'utilisateur
+        await userDocRef.update({
+          'phoneUser': phoneUser,
+          'NomUser': NomUser,
+          'age': age,
+          'email': email,
+          'sexe': sexe,
+          'niveauSColaire': niveauSColaire,
+          'SituationMatrimoniale': SituationMatrimoniale,
+          'emploi': emploi,
+        });
+
+        print("Informations de l'utilisateur mises à jour avec succès");
+      } else {
+        print("Erreur: Le document de l'utilisateur n'existe pas.");
+      }
+    } catch (e) {
+      print(
+          "Erreur lors de la mise à jour des informations de l'utilisateur: $e");
+    }
+  }
+
 }
